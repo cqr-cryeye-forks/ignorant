@@ -16,6 +16,7 @@ import re
 import string
 import sys
 import time
+import phonenumbers
 import trio
 import urllib.parse
 
@@ -87,15 +88,15 @@ def print_result(data,args,phone, country_code,start_time,websites):
         else:
             return(text)
 
-    description = print_color("[+] Phone number used","green",args) + "," + print_color(" [-] Phone number not used", "magenta",args) + "," + print_color(" [x] Rate limit","red",args)
-    full_number="+"+str(country_code)+" "+str(phone)
-    if args.noclear==False:
-        print("\033[H\033[J")
-    else:
-        print("\n")
-    print("*" * (len(full_number) + 6))
-    print("   " + full_number)
-    print("*" * (len(full_number) + 6))
+    # description = print_color("[+] Phone number used","green",args) + "," + print_color(" [-] Phone number not used", "magenta",args) + "," + print_color(" [x] Rate limit","red",args)
+    # full_number="+"+str(country_code)+" "+str(phone)
+    # if args.noclear==False:
+    #     print("\033[H\033[J")
+    # else:
+    #     print("\n")
+    # print("*" * (len(full_number) + 6))
+    # print("   " + full_number)
+    # print("*" * (len(full_number) + 6))
 
     for results in data:
         if results["rateLimit"] and args.onlyused == False:
@@ -109,9 +110,9 @@ def print_result(data,args,phone, country_code,start_time,websites):
             websiteprint = print_color("[+] " + results["domain"] + toprint, "green",args)
             print(websiteprint)
 
-    print("\n" + description)
-    print(str(len(websites)) + " websites checked in " +
-          str(round(time.time() - start_time, 2)) + " seconds")
+    # print("\n" + description)
+    # print(str(len(websites)) + " websites checked in " +
+    #       str(round(time.time() - start_time, 2)) + " seconds")
 
 
 async def launch_module(module, phone, country_code, client, out):
@@ -125,9 +126,9 @@ async def launch_module(module, phone, country_code, client, out):
                     "exists": False})
 async def maincore():
     parser= ArgumentParser(description=f"ignorant v{__version__}")
-    parser.add_argument("country_code",
-                    nargs='+', metavar='country code',
-                    help="Country code of the phone (Example +1)")
+    # parser.add_argument("country_code",
+    #                 nargs='+', metavar='country code',
+    #                 help="Country code of the phone (Example +1)")
     parser.add_argument("phone",
                     nargs='+', metavar='phone number',
                     help="Target phone example (345568554)")
@@ -140,11 +141,18 @@ async def maincore():
     parser.add_argument("-T","--timeout", default=10, required=False,dest="timeout",
                     help="Set max timeout value (default 10)")
 
-    check_update()
+    # check_update()
     args = parser.parse_args()
-    credit()
-    country_code=args.country_code[0]
-    phone=args.phone[0]
+    # credit()
+    # check " + " in the number
+    if args.phone[0][0] != '+':
+        args.phone[0] = '+' + str(args.phone[0])
+    # get info about phone from google phonenumbers
+    phonenumber = phonenumbers.parse(args.phone[0], None)
+    country_code = phonenumber.country_code
+    phone = phonenumber.national_number
+    # country_code=args.country_code[0]
+    # phone=args.phone[0]
 
     # Import Modules
     modules = import_submodules("ignorant.modules")
@@ -169,6 +177,6 @@ async def maincore():
     await client.aclose()
     # Print the result
     print_result(out,args,phone, country_code,start_time,websites)
-    credit()
+    # credit()
 def main():
     trio.run(maincore)
